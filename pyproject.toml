@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hulhe-bot"
+version = "0.1.0"
+description = "Heads-up limit Texas hold'em abstraction, training, and evaluation pipeline."
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{name = "Codex"}]
+license = {text = "MIT"}
+dependencies = []
+
+[project.optional-dependencies]
+solver = ["LiteEFG", "open_spiel>=1.2"]
+eval = ["eval7"]
+
+[project.scripts]
+hulhe-bot = "hulhe_bot.cli:main"
+
+[tool.setuptools]
+packages = ["hulhe_bot"]
+

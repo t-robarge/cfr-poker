@@ -1,0 +1,77 @@
+# kuhn_poker instance with parameters:
+#
+# Opt {
+#     openspiel,
+#     players: 2,
+# }
+#
+node / chance actions 0/=0.33333333 1/=0.33333333 2/=0.33333333
+node 2/ chance actions 2/0/=0.50000000 2/1/=0.50000000
+node 2/1/ player 1 actions 2/1/0/ 2/1/1/
+node 2/1/1/ player 2 actions 2/1/1/0/ 2/1/1/1/
+node 2/1/1/1/ leaf payoffs 1=2.000000 2=-2.000000
+node 2/1/1/0/ leaf payoffs 1=1.000000 2=-1.000000
+node 2/1/0/ player 2 actions 2/1/0/0/ 2/1/0/1/
+node 2/1/0/1/ player 1 actions 2/1/0/1/0/ 2/1/0/1/1/
+node 2/1/0/1/1/ leaf payoffs 1=2.000000 2=-2.000000
+node 2/1/0/1/0/ leaf payoffs 1=-1.000000 2=1.000000
+node 2/1/0/0/ leaf payoffs 1=1.000000 2=-1.000000
+node 2/0/ player 1 actions 2/0/0/ 2/0/1/
+node 2/0/1/ player 2 actions 2/0/1/0/ 2/0/1/1/
+node 2/0/1/1/ leaf payoffs 1=2.000000 2=-2.000000
+node 2/0/1/0/ leaf payoffs 1=1.000000 2=-1.000000
+node 2/0/0/ player 2 actions 2/0/0/0/ 2/0/0/1/
+node 2/0/0/1/ player 1 actions 2/0/0/1/0/ 2/0/0/1/1/
+node 2/0/0/1/1/ leaf payoffs 1=2.000000 2=-2.000000
+node 2/0/0/1/0/ leaf payoffs 1=-1.000000 2=1.000000
+node 2/0/0/0/ leaf payoffs 1=1.000000 2=-1.000000
+node 1/ chance actions 1/0/=0.50000000 1/2/=0.50000000
+node 1/2/ player 1 actions 1/2/0/ 1/2/1/
+node 1/2/1/ player 2 actions 1/2/1/0/ 1/2/1/1/
+node 1/2/1/1/ leaf payoffs 1=-2.000000 2=2.000000
+node 1/2/1/0/ leaf payoffs 1=1.000000 2=-1.000000
+node 1/2/0/ player 2 actions 1/2/0/0/ 1/2/0/1/
+node 1/2/0/1/ player 1 actions 1/2/0/1/0/ 1/2/0/1/1/
+node 1/2/0/1/1/ leaf payoffs 1=-2.000000 2=2.000000
+node 1/2/0/1/0/ leaf payoffs 1=-1.000000 2=1.000000
+node 1/2/0/0/ leaf payoffs 1=-1.000000 2=1.000000
+node 1/0/ player 1 actions 1/0/0/ 1/0/1/
+node 1/0/1/ player 2 actions 1/0/1/0/ 1/0/1/1/
+node 1/0/1/1/ leaf payoffs 1=2.000000 2=-2.000000
+node 1/0/1/0/ leaf payoffs 1=1.000000 2=-1.000000
+node 1/0/0/ player 2 actions 1/0/0/0/ 1/0/0/1/
+node 1/0/0/1/ player 1 actions 1/0/0/1/0/ 1/0/0/1/1/
+node 1/0/0/1/1/ leaf payoffs 1=2.000000 2=-2.000000
+node 1/0/0/1/0/ leaf payoffs 1=-1.000000 2=1.000000
+node 1/0/0/0/ leaf payoffs 1=1.000000 2=-1.000000
+node 0/ chance actions 0/1/=0.50000000 0/2/=0.50000000
+node 0/2/ player 1 actions 0/2/0/ 0/2/1/
+node 0/2/1/ player 2 actions 0/2/1/0/ 0/2/1/1/
+node 0/2/1/1/ leaf payoffs 1=-2.000000 2=2.000000
+node 0/2/1/0/ leaf payoffs 1=1.000000 2=-1.000000
+node 0/2/0/ player 2 actions 0/2/0/0/ 0/2/0/1/
+node 0/2/0/1/ player 1 actions 0/2/0/1/0/ 0/2/0/1/1/
+node 0/2/0/1/1/ leaf payoffs 1=-2.000000 2=2.000000
+node 0/2/0/1/0/ leaf payoffs 1=-1.000000 2=1.000000
+node 0/2/0/0/ leaf payoffs 1=-1.000000 2=1.000000
+node 0/1/ player 1 actions 0/1/0/ 0/1/1/
+node 0/1/1/ player 2 actions 0/1/1/0/ 0/1/1/1/
+node 0/1/1/1/ leaf payoffs 1=-2.000000 2=2.000000
+node 0/1/1/0/ leaf payoffs 1=1.000000 2=-1.000000
+node 0/1/0/ player 2 actions 0/1/0/0/ 0/1/0/1/
+node 0/1/0/1/ player 1 actions 0/1/0/1/0/ 0/1/0/1/1/
+node 0/1/0/1/1/ leaf payoffs 1=-2.000000 2=2.000000
+node 0/1/0/1/0/ leaf payoffs 1=-1.000000 2=1.000000
+node 0/1/0/0/ leaf payoffs 1=-1.000000 2=1.000000
+infoset pl1_0__2 nodes 2/1/ 2/0/
+infoset pl2_0__1b nodes 2/1/1/ 0/1/1/
+infoset pl2_1__1p nodes 2/1/0/ 0/1/0/
+infoset pl1_1__2pb nodes 2/1/0/1/ 2/0/0/1/
+infoset pl2_2__0b nodes 2/0/1/ 1/0/1/
+infoset pl2_3__0p nodes 2/0/0/ 1/0/0/
+infoset pl1_2__1 nodes 1/2/ 1/0/
+infoset pl2_4__2b nodes 1/2/1/ 0/2/1/
+infoset pl2_5__2p nodes 1/2/0/ 0/2/0/
+infoset pl1_3__1pb nodes 1/2/0/1/ 1/0/0/1/
+infoset pl1_4__0 nodes 0/2/ 0/1/
+infoset pl1_5__0pb nodes 0/2/0/1/ 0/1/0/1/

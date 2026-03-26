@@ -1,0 +1,16 @@
+{
+  "seed": 19,
+  "abstraction_samples": 80,
+  "river_payoff_samples": 80,
+  "flop_rollout_samples": 4,
+  "turn_rollout_samples": 4,
+  "training_iterations": 30,
+  "smoke_iterations": 10,
+  "checkpoint_every": 10,
+  "fine_tune_hands": 20,
+  "fine_tune_validation_hands": 10,
+  "fine_tune_eval_interval": 10,
+  "abstraction_file": "artifacts/smoke_abstract.game",
+  "blueprint_file": "artifacts/smoke_blueprint.json",
+  "tuned_file": "artifacts/smoke_tuned.json"
+}

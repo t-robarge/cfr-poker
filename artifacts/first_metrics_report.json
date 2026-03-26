@@ -1,0 +1,190 @@
+{
+  "artifacts": {
+    "ablation": "artifacts/first_metrics_blueprint_cfr_plus.json",
+    "blueprint": "artifacts/first_metrics_blueprint.json",
+    "tuned": "artifacts/first_metrics_tuned.json"
+  },
+  "config": {
+    "ablation_algorithm": "cfr_plus",
+    "abstraction_file": "artifacts/first_metrics_abstract.game",
+    "abstraction_samples": 120,
+    "artifact_dir": "artifacts",
+    "bet_cap": 4,
+    "big_bet": 4,
+    "big_blind": 2,
+    "blueprint_file": "artifacts/first_metrics_blueprint.json",
+    "checkpoint_every": 20,
+    "default_eval_hands": 50,
+    "default_eval_seeds": 2,
+    "experiment_report_file": "artifacts/first_metrics_report.json",
+    "fine_tune_alpha": 0.15,
+    "fine_tune_epsilon": 0.1,
+    "fine_tune_eval_interval": 20,
+    "fine_tune_hands": 40,
+    "fine_tune_validation_hands": 20,
+    "flop_buckets": 12,
+    "flop_rollout_samples": 4,
+    "preflop_buckets": 169,
+    "residual_mix_weight": 0.15,
+    "residual_temperature": 0.5,
+    "river_buckets": 10,
+    "river_payoff_samples": 120,
+    "seed": 19,
+    "small_bet": 2,
+    "small_blind": 1,
+    "smoke_iterations": 20,
+    "starting_stack": 400,
+    "trainer_backend": "auto",
+    "training_iterations": 60,
+    "tuned_file": "artifacts/first_metrics_tuned.json",
+    "turn_buckets": 12,
+    "turn_rollout_samples": 4
+  },
+  "dependency_status": {
+    "LiteEFG": true,
+    "pyspiel": true
+  },
+  "evaluations": {
+    "ablation": {
+      "loose_passive": {
+        "sb_per_100_ci95": 7.839999999999993,
+        "sb_per_100_mean": 53.0,
+        "seed_results": [
+          49.0,
+          56.99999999999999
+        ]
+      },
+      "mirror": {
+        "sb_per_100_ci95": 46.06,
+        "sb_per_100_mean": 51.5,
+        "seed_results": [
+          28.000000000000004,
+          75.0
+        ]
+      },
+      "random": {
+        "sb_per_100_ci95": 42.14,
+        "sb_per_100_mean": 26.5,
+        "seed_results": [
+          5.0,
+          48.0
+        ]
+      },
+      "tight_aggressive": {
+        "sb_per_100_ci95": 133.28,
+        "sb_per_100_mean": -32.0,
+        "seed_results": [
+          36.0,
+          -100.0
+        ]
+      }
+    },
+    "blueprint": {
+      "loose_passive": {
+        "sb_per_100_ci95": 13.719999999999999,
+        "sb_per_100_mean": 34.0,
+        "seed_results": [
+          27.0,
+          41.0
+        ]
+      },
+      "mirror": {
+        "sb_per_100_ci95": 44.099999999999994,
+        "sb_per_100_mean": 50.5,
+        "seed_results": [
+          28.000000000000004,
+          73.0
+        ]
+      },
+      "random": {
+        "sb_per_100_ci95": 22.54,
+        "sb_per_100_mean": 28.5,
+        "seed_results": [
+          17.0,
+          40.0
+        ]
+      },
+      "tight_aggressive": {
+        "sb_per_100_ci95": 107.8,
+        "sb_per_100_mean": -23.0,
+        "seed_results": [
+          32.0,
+          -78.0
+        ]
+      }
+    },
+    "tuned": {
+      "loose_passive": {
+        "sb_per_100_ci95": 13.719999999999999,
+        "sb_per_100_mean": 34.0,
+        "seed_results": [
+          27.0,
+          41.0
+        ]
+      },
+      "mirror": {
+        "sb_per_100_ci95": 44.099999999999994,
+        "sb_per_100_mean": 50.5,
+        "seed_results": [
+          28.000000000000004,
+          73.0
+        ]
+      },
+      "random": {
+        "sb_per_100_ci95": 22.54,
+        "sb_per_100_mean": 28.5,
+        "seed_results": [
+          17.0,
+          40.0
+        ]
+      },
+      "tight_aggressive": {
+        "sb_per_100_ci95": 107.8,
+        "sb_per_100_mean": -23.0,
+        "seed_results": [
+          32.0,
+          -78.0
+        ]
+      }
+    }
+  },
+  "head_to_head": {
+    "blueprint_vs_ablation": {
+      "sb_per_100_ci95": 32.339999999999996,
+      "sb_per_100_mean": -32.5,
+      "seed_results": [
+        -16.0,
+        -49.0
+      ]
+    },
+    "tuned_vs_blueprint": {
+      "sb_per_100_ci95": 24.5,
+      "sb_per_100_mean": -36.5,
+      "seed_results": [
+        -24.0,
+        -49.0
+      ]
+    }
+  },
+  "simulation_notes": {
+    "button_assignment": "alternates by hand index",
+    "deck_sampling": "fresh shuffled deck per hand",
+    "metric": "small bets won per 100 hands",
+    "opponents": [
+      "random",
+      "loose_passive",
+      "tight_aggressive",
+      "mirror"
+    ]
+  },
+  "solver_check": {
+    "available": true,
+    "final_exploitability": 0.11093597182614279,
+    "improved": true,
+    "initial_exploitability": 0.5,
+    "status": {
+      "LiteEFG": true,
+      "pyspiel": true
+    }
+  }
+}
