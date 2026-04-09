@@ -102,6 +102,15 @@ def evaluate_5card(cards: tuple[str, ...]) -> tuple[int, ...]:
 
 @lru_cache(maxsize=500_000)
 def evaluate_7card(cards: tuple[str, ...]) -> tuple[int, ...]:
+    if len(cards) != 7:
+        raise ValueError("evaluate_7card expects exactly seven cards.")
+    return evaluate_best(cards)
+
+
+@lru_cache(maxsize=500_000)
+def evaluate_best(cards: tuple[str, ...]) -> tuple[int, ...]:
+    if len(cards) < 5:
+        raise ValueError("Need at least five cards to evaluate a hand.")
     best = None
     for combo in itertools.combinations(cards, 5):
         score = evaluate_5card(combo)
@@ -113,8 +122,8 @@ def evaluate_7card(cards: tuple[str, ...]) -> tuple[int, ...]:
 
 
 def compare_hands(cards_a: tuple[str, ...], cards_b: tuple[str, ...]) -> int:
-    score_a = evaluate_7card(cards_a)
-    score_b = evaluate_7card(cards_b)
+    score_a = evaluate_best(cards_a)
+    score_b = evaluate_best(cards_b)
     if score_a > score_b:
         return 1
     if score_b > score_a:
@@ -191,3 +200,52 @@ def preflop_class_index(hole_cards: tuple[str, str]) -> int:
         row = max(i1, i2)
         col = min(i1, i2)
     return row * 13 + col
+
+
+def made_hand_class(hole_cards: tuple[str, str], board: tuple[str, ...]) -> int:
+    score = evaluate_best(tuple(hole_cards + board))
+    rank_class = score[0]
+    if rank_class == 0:
+        return 0
+    if rank_class == 1:
+        pair_rank = score[1]
+        board_top = max((RANK_VALUE[card[0]] for card in board), default=0)
+        if pair_rank >= board_top:
+            return 2
+        return 1
+    if rank_class in {2, 3}:
+        return 3
+    return 4
+
+
+def has_flush_draw(hole_cards: tuple[str, str], board: tuple[str, ...]) -> bool:
+    cards = hole_cards + board
+    suit_counts = Counter(card[1] for card in cards)
+    max_suit = max(suit_counts.values(), default=0)
+    if len(board) >= 5:
+        return False
+    if max_suit >= 5:
+        return False
+    return max_suit >= 4
+
+
+def has_straight_draw(hole_cards: tuple[str, str], board: tuple[str, ...]) -> bool:
+    if len(board) >= 5:
+        return False
+    rank_class = evaluate_best(tuple(hole_cards + board))[0]
+    if rank_class >= 4:
+        return False
+    ranks = {RANK_VALUE[card[0]] for card in hole_cards + board}
+    if 14 in ranks:
+        ranks.add(1)
+    for start in range(1, 11):
+        window = set(range(start, start + 5))
+        if len(window & ranks) >= 4:
+            return True
+    return False
+
+
+def draw_class(hole_cards: tuple[str, str], board: tuple[str, ...]) -> int:
+    flush_draw = has_flush_draw(hole_cards, board)
+    straight_draw = has_straight_draw(hole_cards, board)
+    return int(flush_draw) + int(straight_draw)

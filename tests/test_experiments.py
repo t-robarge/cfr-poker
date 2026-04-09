@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 import tempfile
 import unittest
 
@@ -34,6 +35,52 @@ class ExperimentTests(unittest.TestCase):
             self.assertIn("evaluations", report)
             self.assertIn("blueprint", report["evaluations"])
             self.assertIn("random", report["evaluations"]["blueprint"])
+            self.assertIn("verdict", report["evaluations"]["blueprint"]["random"])
+            self.assertIn("summary", report)
+            self.assertIn("matchups", report["summary"])
+
+    def test_experiment_runner_can_reuse_existing_blueprint(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config = AbstractHULHEConfig(
+                seed=29,
+                abstraction_samples=40,
+                river_payoff_samples=40,
+                flop_rollout_samples=4,
+                turn_rollout_samples=4,
+                training_iterations=12,
+                smoke_iterations=6,
+                checkpoint_every=6,
+                fine_tune_hands=8,
+                fine_tune_validation_hands=6,
+                fine_tune_eval_interval=4,
+                default_eval_hands=8,
+                default_eval_seeds=1,
+                abstraction_file=f"{tmpdir}/abstract.game",
+                blueprint_file=f"{tmpdir}/blueprint.json",
+                tuned_file=f"{tmpdir}/tuned.json",
+                experiment_report_file=f"{tmpdir}/report.json",
+            )
+            runner = ExperimentRunner(config)
+            runner.run(
+                rebuild=True,
+                eval_hands=8,
+                eval_seeds=1,
+                run_ablation=False,
+                run_fine_tune=False,
+            )
+
+            Path(config.abstraction_file).unlink()
+            reused_report = runner.run(
+                rebuild=False,
+                eval_hands=8,
+                eval_seeds=1,
+                run_ablation=False,
+                run_fine_tune=False,
+                reuse_blueprint=True,
+                report_path=f"{tmpdir}/reused_report.json",
+            )
+            self.assertTrue(reused_report["execution"]["reuse_blueprint"])
+            self.assertIn("blueprint", reused_report["evaluations"])
 
 
 if __name__ == "__main__":

@@ -45,12 +45,16 @@ class Evaluator:
     def match(self, agent_a: Agent, agent_b: Agent, hands: int, seed: int) -> MatchResult:
         per_hand_results: list[float] = []
         total = 0.0
+        checkpoint = max(1, hands // 10)  # Report every 10%
         for hand_index in range(hands):
             hand_seed = seed * 1_000_003 + hand_index
             button = hand_index % 2
             result = self.play_hand(agent_a, agent_b, hand_seed, button)
             total += result
             per_hand_results.append(result)
+            if (hand_index + 1) % checkpoint == 0:
+                current_sb_per_100 = (total / (hand_index + 1)) * 100.0
+                print(f"      [MATCH] {hand_index + 1}/{hands} hands, sb/100: {current_sb_per_100:.2f}")
         sb_per_100 = (total / max(1, hands)) * 100.0
         return MatchResult(
             hands=hands,

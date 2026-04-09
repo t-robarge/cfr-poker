@@ -47,6 +47,7 @@ class BucketingResult:
     bucket_id: int
     percentile: float
     canonical_key: str
+    feature_bucket: int = 0
 
 
 @dataclass(slots=True)
@@ -102,4 +103,3 @@ class PolicyArtifact:
             metadata=payload.get("metadata", {}),
             residual_table=payload.get("residual_table", {}),
         )
-

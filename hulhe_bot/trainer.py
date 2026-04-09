@@ -33,6 +33,7 @@ class LocalExternalSamplingTrainer:
     def train(self, iterations: int, checkpoint_every: int) -> PolicyArtifact:
         rng = random.Random(self.config.seed)
         checkpoints: list[dict[str, Any]] = []
+        print(f"  [TRAIN] Starting {self.algorithm.upper()} training ({iterations} iterations)...")
         for iteration in range(1, iterations + 1):
             weight = float(iteration)
             for traverser in (0, 1):
@@ -47,6 +48,7 @@ class LocalExternalSamplingTrainer:
                         "infosets": len(self.strategy_sums),
                     }
                 )
+                print(f"    [CHECKPOINT] Iteration {iteration}/{iterations}, {len(self.strategy_sums)} information sets discovered")
         policy = {
             key: _normalize_probabilities(actions)
             for key, actions in self.strategy_sums.items()

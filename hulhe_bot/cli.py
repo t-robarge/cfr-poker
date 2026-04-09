@@ -121,6 +121,7 @@ def command_run_experiments(args: argparse.Namespace) -> None:
         eval_seeds=args.seeds or config.default_eval_seeds,
         run_ablation=not args.skip_ablation,
         run_fine_tune=not args.skip_fine_tune,
+        reuse_blueprint=args.reuse_blueprint,
         report_path=args.output or config.experiment_report_file,
     )
     print(
@@ -182,6 +183,7 @@ def build_parser() -> argparse.ArgumentParser:
     experiment_parser.add_argument("--seeds", type=int)
     experiment_parser.add_argument("--output")
     experiment_parser.add_argument("--rebuild", action="store_true")
+    experiment_parser.add_argument("--reuse-blueprint", action="store_true")
     experiment_parser.add_argument("--skip-ablation", action="store_true")
     experiment_parser.add_argument("--skip-fine-tune", action="store_true")
     experiment_parser.set_defaults(func=command_run_experiments)

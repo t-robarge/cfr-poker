@@ -21,12 +21,14 @@ class ResidualFineTuner:
         episodes: int | None = None,
     ) -> PolicyArtifact:
         total_episodes = episodes or self.config.fine_tune_hands
+        print(f"  [FINE-TUNE] Starting RL fine-tuning ({total_episodes} episodes)...")
         rng = random.Random(self.config.seed + 99)
         blueprint_runtime = PolicyRuntime(blueprint_policy, self.config, self.evaluator.bucketer)
         blueprint_agent = PolicyAgent(blueprint_runtime, name="blueprint_mirror")
         q_values: dict[str, dict[str, float]] = {}
 
         baseline_score = self._validate(blueprint_policy)
+        print(f"    [EVAL] Baseline score: {baseline_score:.4f}")
         best_score = baseline_score
         best_residual: dict[str, dict[str, float]] = {}
 
@@ -74,6 +76,7 @@ class ResidualFineTuner:
                     residual_table=deepcopy(q_values),
                 )
                 score = self._validate(candidate)
+                print(f"    [EVAL] Episode {episode}/{total_episodes}, Score: {score:.4f}, Best: {best_score:.4f}")
                 if score > best_score:
                     best_score = score
                     best_residual = deepcopy(q_values)
