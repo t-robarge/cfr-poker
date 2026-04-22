@@ -43,6 +43,19 @@ class AbstractHULHEConfig:
     trainer_backend: str = "auto"
     ablation_algorithm: str = "cfr_plus"
 
+    # --- Stage-2 / Stage-3 flags (backwards-compatible defaults) ----------
+    fine_tune_mode: str = "tabular"           # "tabular" (existing) | "nn"
+    use_subgame_solving: bool = False          # enable river subgame refinement
+    subgame_blend_weight: float = 0.5          # how much subgame overrides blueprint
+    nn_learning_rate: float = 0.001
+    nn_batch_size: int = 32
+
+    # Opponent mix weights for fine-tuning: [mirror, loose_passive, tight_aggressive]
+    # Must sum to 1.0.  Default = balanced 50/25/25.
+    opponent_mix_mirror: float = 0.50
+    opponent_mix_lp: float = 0.25
+    opponent_mix_tag: float = 0.25
+
     @property
     def reward_unit(self) -> int:
         return self.small_bet

@@ -80,6 +80,7 @@ class PolicyArtifact:
     policy_table: dict[str, dict[str, float]]
     metadata: dict[str, Any] = field(default_factory=dict)
     residual_table: dict[str, dict[str, float]] = field(default_factory=dict)
+    nn_weights: dict[str, Any] = field(default_factory=dict)
 
     def save(self, path: str | Path) -> None:
         payload = {
@@ -88,6 +89,7 @@ class PolicyArtifact:
             "policy_table": self.policy_table,
             "metadata": self.metadata,
             "residual_table": self.residual_table,
+            "nn_weights": self.nn_weights,
         }
         target = Path(path)
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -102,4 +104,5 @@ class PolicyArtifact:
             policy_table=payload["policy_table"],
             metadata=payload.get("metadata", {}),
             residual_table=payload.get("residual_table", {}),
+            nn_weights=payload.get("nn_weights", {}),
         )

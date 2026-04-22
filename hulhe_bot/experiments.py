@@ -15,6 +15,15 @@ from .rl import ResidualFineTuner
 from .trainer import LiteEFGTrainer
 
 
+def _make_fine_tuner(config: AbstractHULHEConfig):
+    """Factory: pick tabular or NN fine-tuner based on config."""
+    mode = getattr(config, "fine_tune_mode", "tabular")
+    if mode == "nn":
+        from .nn_rl import NNResidualFineTuner
+        return NNResidualFineTuner(config)
+    return ResidualFineTuner(config)
+
+
 def summarize_seed_results(values: list[float]) -> dict[str, Any]:
     mean = sum(values) / len(values) if values else 0.0
     ci95 = 0.0
@@ -43,7 +52,7 @@ class ExperimentRunner:
         self.config = config or AbstractHULHEConfig()
         self.builder = AbstractGameBuilder(self.config)
         self.trainer = LiteEFGTrainer(self.config)
-        self.fine_tuner = ResidualFineTuner(self.config)
+        self.fine_tuner = _make_fine_tuner(self.config)
         self.evaluator = Evaluator(self.config)
 
     def run(
@@ -54,6 +63,7 @@ class ExperimentRunner:
         run_ablation: bool = True,
         run_fine_tune: bool = True,
         reuse_blueprint: bool = False,
+        tuned_only: bool = False,
         report_path: str | None = None,
     ) -> dict[str, Any]:
         print("[HULHE] Starting experiment run...")
@@ -113,12 +123,15 @@ class ExperimentRunner:
         print(f"[EVAL] Evaluating {len(artifacts)} policies ({hands} hands × {seeds} seeds each)...")
         evaluations = {}
         for label, artifact in artifacts.items():
+            if tuned_only and label != "tuned":
+                print(f"  [EVAL] Skipping {label} (--tuned-only)")
+                continue
             print(f"  [EVAL] Evaluating {label}...")
             evaluations[label] = self.evaluate_policy(artifact, hands=hands, seeds=seeds)
             print(f"  [EVAL] {label} evaluation complete.")
 
         head_to_head = {}
-        if "tuned" in artifacts:
+        if "tuned" in artifacts and not tuned_only:
             print(f"[H2H] Running head-to-head: tuned vs blueprint...")
             head_to_head["tuned_vs_blueprint"] = self.evaluate_head_to_head(
                 artifacts["tuned"],
@@ -127,7 +140,7 @@ class ExperimentRunner:
                 seeds=seeds,
             )
             print(f"[H2H] tuned vs blueprint complete.")
-        if "ablation" in artifacts:
+        if "ablation" in artifacts and not tuned_only:
             print(f"[H2H] Running head-to-head: blueprint vs ablation...")
             head_to_head["blueprint_vs_ablation"] = self.evaluate_head_to_head(
                 artifacts["blueprint"],

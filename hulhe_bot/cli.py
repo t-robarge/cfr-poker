@@ -122,19 +122,21 @@ def command_run_experiments(args: argparse.Namespace) -> None:
         run_ablation=not args.skip_ablation,
         run_fine_tune=not args.skip_fine_tune,
         reuse_blueprint=args.reuse_blueprint,
+        tuned_only=args.tuned_only,
         report_path=args.output or config.experiment_report_file,
     )
-    print(
-        json.dumps(
-            {
-                "report_file": args.output or config.experiment_report_file,
-                "blueprint_random": report["evaluations"]["blueprint"]["random"],
-                "blueprint_tight_aggressive": report["evaluations"]["blueprint"]["tight_aggressive"],
-                "solver_check": report["solver_check"],
-            },
-            indent=2,
-        )
-    )
+    summary: dict[str, Any] = {
+        "report_file": args.output or config.experiment_report_file,
+        "solver_check": report["solver_check"],
+    }
+    evals = report["evaluations"]
+    # Show the most relevant policy's results
+    for label in ("tuned", "blueprint"):
+        if label in evals:
+            summary[f"{label}_random"] = evals[label]["random"]
+            summary[f"{label}_tight_aggressive"] = evals[label]["tight_aggressive"]
+            break
+    print(json.dumps(summary, indent=2))
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -186,6 +188,8 @@ def build_parser() -> argparse.ArgumentParser:
     experiment_parser.add_argument("--reuse-blueprint", action="store_true")
     experiment_parser.add_argument("--skip-ablation", action="store_true")
     experiment_parser.add_argument("--skip-fine-tune", action="store_true")
+    experiment_parser.add_argument("--tuned-only", action="store_true",
+                                   help="Only evaluate the tuned policy (skip blueprint/ablation eval and head-to-head)")
     experiment_parser.set_defaults(func=command_run_experiments)
     return parser
 

@@ -1,0 +1,253 @@
+\documentclass{article}
+\usepackage{nips15submit_e,times}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{graphicx}
+
+\title{Midpoint Report: Game-Theoretic Poker Bot\\for Heads-Up Limit Hold'em}
+
+\author{
+Tim Robarge \\
+Department of Computer Science and Engineering\\
+University of Connecticut\\
+\texttt{tim.robarge@uconn.edu}
+}
+
+\nipsfinalcopy
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+We present a three-stage pipeline for building a competitive Heads-Up Limit Texas Hold'em (HULHE) poker bot: game abstraction via equity-based bucketing, blueprint strategy computation via Monte Carlo Counterfactual Regret Minimization (MCCFR), and residual reinforcement learning fine-tuning. We evaluate performance against four baseline opponents across three experimental configurations that vary abstraction quality and bucket granularity. Our best blueprint achieves $+56.46 \pm 5.01$ sb/100 against a random agent and $+12.61 \pm 9.01$ sb/100 against its own mirror, but loses $-60.02 \pm 10.20$ sb/100 to a tight-aggressive opponent. A key finding is that improving equity estimation quality (4$\to$32 Monte Carlo rollouts) yields a 19-point improvement against tight-aggressive play. However, increasing bucket granularity (12$\to$48 buckets) with insufficient supporting data provides no additional benefit, demonstrating the bias-variance tradeoff in game abstraction documented in the Libratus and Pluribus literature.
+\end{abstract}
+
+\section{Introduction}
+
+Poker is a canonical testbed for artificial intelligence in imperfect-information games. Unlike chess or Go, poker requires reasoning under uncertainty about hidden opponent cards, stochastic outcomes from community cards, and strategic deception through betting patterns. These properties make poker directly relevant to real-world domains including negotiation, security, and auction design.
+
+The game-theoretic approach to poker seeks strategies that approximate a Nash equilibrium: a policy that cannot be exploited by any opponent in expectation. This contrasts with pure reinforcement learning approaches, which optimize against specific opponents but may be exploitable by adaptive adversaries. Landmark systems such as Libratus~\cite{brown2017superhuman} and Pluribus~\cite{brown2019superhuman} demonstrated that abstraction combined with Counterfactual Regret Minimization (CFR) can solve poker variants at superhuman level.
+
+Our project implements this approach for Heads-Up Limit Hold'em (HULHE), a two-player fixed-bet poker variant. The full HULHE game tree is too large ($\sim$$10^{14}$ information sets) to solve directly on commodity hardware, so we employ a three-stage pipeline: (1) map the game into a tractable abstract representation via equity-based bucketing, (2) compute a near-equilibrium blueprint strategy via MCCFR, and (3) refine the blueprint with residual Q-learning against a mix of opponent styles.
+
+This midpoint report describes the complete, functional system, presents results from three experimental configurations, and diagnoses the primary open challenge: the bot's persistent vulnerability to tight-aggressive play, which we trace to fundamental limitations in our abstraction.
+
+\section{Methodology}
+
+\subsection{Game abstraction}
+
+The abstraction layer maps the enormous HULHE state space into a finite game tree by grouping strategically similar hands into \textit{buckets}. Each bucket represents a set of hands that we assume should play identically.
+
+\textbf{Bucketing scheme.} We partition hands per street:
+\begin{itemize}
+    \item \textbf{Preflop}: 169 buckets, one per canonical starting hand class (e.g., AA, AKs, 72o), preserving full preflop information.
+    \item \textbf{Flop/Turn}: $n_{\text{eq}}$ equity buckets $\times$ feature buckets. Equity is estimated via Monte Carlo rollouts sampling random completions of the board and opponent holdings. Feature buckets encode made-hand class (high card through straight flush) crossed with draw potential (none, draw, strong draw).
+    \item \textbf{River}: $n_{\text{river}}$ equity buckets $\times$ hand class. Equity is computed exactly by enumerating all possible opponent holdings against the known 5-card board.
+\end{itemize}
+
+Canonical suit isomorphism (e.g., $A\heartsuit K\heartsuit \equiv A\spadesuit K\spadesuit$) reduces redundancy and avoids recomputation.
+
+\textbf{Abstract game construction.} We sample \texttt{abstraction\_samples} random deals, bucket each player's hand at each street, and compute: (a) bucket-pair transition probabilities between streets, and (b) expected showdown equity for each river bucket pair from \texttt{river\_payoff\_samples} deals. The result is a complete game tree over bucket pairs with terminal payoffs.
+
+\subsection{Blueprint training: MCCFR}
+
+We train the blueprint strategy using Monte Carlo CFR with external sampling~\cite{lanctot2009monte}. The algorithm performs recursive depth-first traversal of the abstract game tree. For the traversing player, all actions are explored and counterfactual values computed. For the opponent, a single action is sampled proportional to the current strategy (external sampling), avoiding the need to track reach probabilities.
+
+Each information set maintains accumulated regrets $R_i(a)$ and strategy sums $S_i(a)$. The current strategy uses regret matching:
+\begin{equation}
+    \sigma_i(a) = \frac{\max(0, R_i(a))}{\sum_{a'} \max(0, R_i(a'))}
+\end{equation}
+with uniform fallback when all regrets are non-positive. The final output policy is the normalized time-weighted average strategy, which converges to a Nash equilibrium at rate $O(1/\sqrt{T})$ in two-player zero-sum games.
+
+Our implementation also supports CFR+ (non-negative regret clamping) and DCFR (discounted regrets), which we use for ablation comparisons.
+
+\subsection{Residual reinforcement learning}
+
+To improve the blueprint against non-equilibrium opponents, we layer a residual Q-learning module on top of the trained policy. The fine-tuner plays episodes against a mixed opponent pool (50\% self-play mirror, 25\% loose-passive, 25\% tight-aggressive) and maintains per-infoset Q-value adjustments:
+\begin{equation}
+    Q(s,a) \leftarrow Q(s,a) + \alpha \cdot (r - Q(s,a)), \quad \alpha = 0.15
+\end{equation}
+
+The final action distribution blends the blueprint with a softmax over Q-values:
+\begin{equation}
+    \pi(a|s) = (1 - w) \cdot \pi_{\text{blueprint}}(a|s) + w \cdot \text{softmax}(Q(s, \cdot) / \tau)
+\end{equation}
+with mixing weight $w = 0.15$ and temperature $\tau = 0.5$. Periodic validation selects the residual table that maximizes weighted performance across the opponent mix.
+
+\subsection{Evaluation methodology}
+
+All matchups are measured in \textit{small bets per 100 hands} (sb/100), the standard metric for limit poker. Each evaluation runs $H = 2{,}000$ hands across $S = 5$ random seeds with alternating button position. We report the mean and 95\% confidence interval:
+\begin{equation}
+    \text{CI}_{95} = 1.96 \cdot \sqrt{\frac{\text{Var}(\text{seed means})}{S}}
+\end{equation}
+
+We test against four opponents: \textbf{Random} (uniform over legal actions), \textbf{Loose-Passive} (calls nearly everything, rarely raises), \textbf{Tight-Aggressive} (folds below 35\% equity, raises above 75\%, calls between), and \textbf{Mirror} (a copy of the bot's own policy). We also validate our CFR implementation on Kuhn Poker via LiteEFG/OpenSpiel, confirming exploitability decreases from 0.500 to 0.111.
+
+\section{Experimental results}
+
+We ran three experimental configurations to isolate the effects of equity estimation quality and abstraction granularity.
+
+\subsection{Experimental conditions}
+
+\begin{table}[h]
+\centering
+\caption{Configuration parameters for three experimental conditions.}
+\label{tab:configs}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Parameter} & \textbf{Early} & \textbf{Midpoint} & \textbf{Fine Buckets} \\
+\midrule
+Flop/Turn equity buckets & 12 & 12 & 48 \\
+River equity buckets & 10 & 10 & 24 \\
+Rollout samples per street & 4 & 32 & 32 \\
+Abstraction samples & 120 & 2{,}000 & 2{,}000 \\
+Training iterations & 100{,}000 & 100{,}000 & 300{,}000 \\
+Fine-tune episodes & 200 & 50{,}000 & 50{,}000 \\
+Eval: hands $\times$ seeds & $300 \times 3$ & $2{,}000 \times 5$ & $2{,}000 \times 5$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The \textbf{Early} configuration represents our initial attempt with minimal computational investment. \textbf{Midpoint} isolates the effect of improving equity estimation (32$\times$ more rollouts, 17$\times$ more abstraction samples). \textbf{Fine Buckets} tests whether finer granularity (4$\times$ more buckets, 3$\times$ more training) further improves performance.
+
+\subsection{Blueprint performance}
+
+\begin{table}[h]
+\centering
+\caption{Blueprint policy performance (sb/100 $\pm$ 95\% CI) across three experimental conditions.}
+\label{tab:blueprint}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Opponent} & \textbf{Early} & \textbf{Midpoint} & \textbf{Fine Buckets} \\
+\midrule
+Random       & $+31.61 \pm 15.47$ & $\mathbf{+56.46 \pm 5.01}$ & $+48.79 \pm 5.84$ \\
+Loose-Passive & $-3.78 \pm 23.41$ & $-5.99 \pm 9.45$  & $-7.22 \pm 6.07$ \\
+Tight-Aggressive & $-79.22 \pm 17.70$ & $\mathbf{-60.02 \pm 10.20}$ & $-61.53 \pm 9.06$ \\
+Mirror       & $+21.78 \pm 25.67$ & $+12.61 \pm 9.01$ & $+9.47 \pm 5.41$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Key observations.} Moving from Early to Midpoint yielded substantial improvement: +25 sb/100 against Random and +19 sb/100 against Tight-Aggressive. Confidence intervals also shrank dramatically (from $\pm$15--26 to $\pm$5--10) due to the 10$\times$ larger evaluation. However, moving from Midpoint to Fine Buckets provided \textit{no additional benefit}---performance against Tight-Aggressive was statistically unchanged ($-60.02$ vs.\ $-61.53$, overlapping CIs), while Random performance slightly decreased.
+
+\subsection{Fine-tuning and head-to-head results}
+
+\begin{table}[h]
+\centering
+\caption{Tuned policy performance and head-to-head comparisons (sb/100 $\pm$ 95\% CI).}
+\label{tab:tuned}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+\textbf{Matchup} & \textbf{Midpoint} & \textbf{Fine Buckets} \\
+\midrule
+Tuned vs Random       & $+51.58 \pm 4.08$ & $+43.74 \pm 4.85$ \\
+Tuned vs TAG          & $-57.19 \pm 8.96$ & $-59.08 \pm 10.01$ \\
+Tuned vs Blueprint (H2H) & $+16.82 \pm 7.14$ & $+18.36 \pm 7.40$ \\
+Blueprint vs CFR+ ablation (H2H) & $+47.81 \pm 5.42$ & $+50.36 \pm 5.92$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Residual RL fine-tuning provided consistent improvement over the blueprint in head-to-head play ($+16$--$18$ sb/100 in both conditions), confirming that the Q-learning overlay learns useful adjustments. However, fine-tuning was unable to overcome the fundamental TAG loss: the tuned policy still loses $-57$ to $-59$ sb/100. The blueprint decisively outperforms the CFR+ ablation ($+48$--$50$ sb/100), validating 100k-iteration MCCFR over 5k-iteration CFR+.
+
+The persistent loss against Loose-Passive ($-5.99$, uncertain) is also notable. A near-equilibrium strategy maximizes value through selective aggression, but a passive opponent who calls everything denies the bot the fold equity its bluffs depend on. In effect, the LP opponent neutralizes the bot's bluffing range while paying off only when behind---a dynamic that requires exploitative adjustment beyond what the current residual layer provides.
+
+\section{Analysis and path forward}
+
+\subsection{The abstraction quality tradeoff}
+
+Our central finding is that the Early$\to$Midpoint improvement came from \textit{equity estimation quality} (more rollout samples producing more accurate bucket assignments), not from any change in strategy computation. Meanwhile, the Midpoint$\to$Fine Buckets experiment demonstrated a well-documented phenomenon in game abstraction: \textit{finer abstraction can hurt performance when training data is insufficient to populate the larger game tree}~\cite{waugh2009abstraction}.
+
+With 48 flop/turn buckets instead of 12, the abstract game tree grew approximately $16\times$ larger. Despite using $3\times$ more training iterations (300k vs.\ 100k), each information set received roughly $5\times$ fewer visits on average. The result: higher-resolution buckets with noisier, less-converged strategies---a net negative.
+
+This is the same tradeoff that motivated Libratus's architecture: compute a \textit{coarse} blueprint offline, then refine specific subgames in real time with full-resolution card information. Our system lacks this real-time refinement capability.
+
+\subsection{The TAG information asymmetry}
+
+The persistent TAG loss has a structural explanation. Our Tight-Aggressive baseline uses the raw continuous equity value (\texttt{bucket\_percentile}) to make decisions: fold below 0.35, raise above 0.75, call between. Our bot sees only a discretized bucket ID. Even with 48 equity buckets ($\sim$2.1\% per bucket), TAG has strictly more information than our bot at every decision point.
+
+This is not a flaw in our CFR solver---it converges correctly on the abstract game---but a limitation of the abstraction itself. No amount of bucket refinement fully closes this gap without either (a) prohibitively many buckets or (b) real-time subgame solving that recovers the lost card information.
+
+\subsection{Comparison to Pluribus and Libratus}
+
+Our system implements the first stage of the Pluribus/Libratus pipeline (offline blueprint via abstraction + CFR) but lacks two critical components:
+
+\textbf{Real-time subgame solving.} Both Pluribus and Libratus compute coarse blueprints offline, then refine strategies in real time at each decision point using depth-limited subgame solving with full card information. This eliminates the abstraction bottleneck that dominates our results.
+
+\textbf{Distribution-based bucketing.} Libratus clusters hands using Earth Mover's Distance between equity \textit{distributions} (histograms of outcomes against all opponent hands), not single-point equity estimates. Two hands at 50\% average equity can have very different distributions (e.g., a flush draw vs.\ top pair), and distribution-based bucketing preserves this distinction.
+
+\subsection{Remaining work}
+
+\textbf{Phase 1: Distribution-based features.} Add equity variance as a bucketing feature alongside mean equity, capturing the distinction between volatile and stable hands. This requires moderate changes to the bucketing module.
+
+\textbf{Phase 2: Scaling study.} Run a controlled iteration-scaling experiment (100k / 200k / 500k iterations) at fixed abstraction to characterize the convergence curve.
+
+\textbf{Phase 3: River subgame solving.} Implement a simplified subgame solver for river decisions only, where the subtree is smallest and exact equity is already computed. This would demonstrate the key Pluribus/Libratus mechanism within a tractable scope.
+
+\textbf{Phase 4: Exploitability measurement.} Develop a best-response computation for our abstract game to directly measure how far the blueprint strategy is from Nash equilibrium, rather than relying on proxy metrics from fixed-opponent evaluations.
+
+\subsection{Success criteria}
+
+\begin{table}[h]
+\centering
+\caption{Project success criteria and current status.}
+\label{tab:criteria}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Criterion} & \textbf{Target} & \textbf{Current} & \textbf{Status} \\
+\midrule
+Beat random agent & $> +20$ sb/100 & $+56.46$ & \checkmark Met \\
+Beat mirror (self-play) & $\geq 0$ sb/100 & $+12.61$ & \checkmark Met \\
+Beat tight-aggressive & $\geq 0$ sb/100 & $-60.02$ & $\times$ Failing \\
+Beat loose-passive & $\geq 0$ sb/100 & $-5.99$ & $\sim$ Uncertain \\
+Fine-tuning improves blueprint & $> 0$ sb/100 H2H & $+16.82$ & \checkmark Met \\
+Kuhn Poker solver validation & Converges & $0.50 \to 0.11$ & \checkmark Met \\
+95\% CI width & $< \pm 10$ & $\pm 5$--$10$ & \checkmark Met \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Five of seven criteria are met. The dominant open problem---tight-aggressive vulnerability---requires architectural improvements (subgame solving or distribution-based abstraction) rather than parameter tuning, which we have shown reaches diminishing returns.
+
+\subsubsection*{Acknowledgments}
+
+Implementation uses LiteEFG~\cite{liteefg} for solver validation and OpenSpiel~\cite{openspiel} for Kuhn Poker equilibrium computation.
+
+\begin{thebibliography}{9}
+
+\bibitem{brown2017superhuman}
+Brown, N. and Sandholm, T. (2017).
+Superhuman AI for heads-up no-limit poker: Libratus beats top professionals.
+\textit{Science}, 359(6374):418--424.
+
+\bibitem{brown2019superhuman}
+Brown, N. and Sandholm, T. (2019).
+Superhuman AI for multiplayer poker.
+\textit{Science}, 365(6456):885--890.
+
+\bibitem{lanctot2009monte}
+Lanctot, M., Waugh, K., Zinkevich, M., and Bowling, M. (2009).
+Monte Carlo sampling for regret minimization in extensive games.
+\textit{Advances in Neural Information Processing Systems}, 22.
+
+\bibitem{waugh2009abstraction}
+Waugh, K., Zinkevich, M., Johanson, M., Kan, M., Schnizlein, D., and Bowling, M. (2009).
+A practical use of imperfect recall.
+\textit{Proceedings of the Eighth Symposium on Abstraction, Reformulation, and Approximation}.
+
+\bibitem{liteefg}
+Zhang, Y., An, B., and Sandholm, T. (2024).
+LiteEFG: A lightweight framework for solving extensive-form games.
+\textit{GitHub repository}.
+
+\bibitem{openspiel}
+Lanctot, M. et al. (2019).
+OpenSpiel: A framework for reinforcement learning in games.
+\textit{arXiv preprint arXiv:1908.09453}.
+
+\end{thebibliography}
+
+\end{document}

@@ -139,9 +139,11 @@ class ResidualFineTuner:
 
     def _sample_opponent(self, blueprint_agent: PolicyAgent, rng: random.Random):
         draw = rng.random()
-        if draw < 0.50:
+        w_mirror = self.config.opponent_mix_mirror
+        w_lp = self.config.opponent_mix_lp
+        if draw < w_mirror:
             return blueprint_agent
-        if draw < 0.75:
+        if draw < w_mirror + w_lp:
             return LoosePassiveAgent()
         return TightAggressiveAgent()
 
@@ -158,9 +160,9 @@ class ResidualFineTuner:
             name="mirror_baseline",
         )
         mix = [
-            (0.50, blueprint_agent),
-            (0.25, LoosePassiveAgent()),
-            (0.25, TightAggressiveAgent()),
+            (self.config.opponent_mix_mirror, blueprint_agent),
+            (self.config.opponent_mix_lp, LoosePassiveAgent()),
+            (self.config.opponent_mix_tag, TightAggressiveAgent()),
         ]
         score = 0.0
         base_seed = self.config.seed + 50_000
