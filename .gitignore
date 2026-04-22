@@ -1,2 +1,15 @@
 .venv
 artifacts
+.vscode
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+*.log
+*.bak
+*.tmp
+*.swp
+.DS_Store
+.pytest_cache
