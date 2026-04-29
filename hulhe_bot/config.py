@@ -45,8 +45,17 @@ class AbstractHULHEConfig:
 
     # --- Stage-2 / Stage-3 flags (backwards-compatible defaults) ----------
     fine_tune_mode: str = "tabular"           # "tabular" (existing) | "nn"
-    use_subgame_solving: bool = False          # enable river subgame refinement
-    subgame_blend_weight: float = 0.5          # how much subgame overrides blueprint
+    use_subgame_solving: bool = False          # enable turn/river public-state refinement
+    subgame_mode: str = "heuristic"           # "heuristic" | "cfr"
+    subgame_blend_weight: float = 0.5          # default blend weight for subgame override
+    turn_subgame_blend_weight: float = 0.35    # lighter override on the turn than on the river
+    subgame_cfr_iterations: int = 200
+    subgame_cfr_algorithm: str = "cfr_plus"   # "mccfr" | "cfr_plus" | "dcfr"
+    subgame_resolve_turn: bool = True
+    subgame_resolve_river: bool = True
+    subgame_exact_posterior_river: bool = False
+    subgame_exact_resolve_river: bool = False
+    subgame_native_exact_river: bool = True
     nn_learning_rate: float = 0.001
     nn_batch_size: int = 32
 

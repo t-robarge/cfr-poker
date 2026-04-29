@@ -139,6 +139,18 @@ def command_run_experiments(args: argparse.Namespace) -> None:
     print(json.dumps(summary, indent=2))
 
 
+def command_play_ui(args: argparse.Namespace) -> None:
+    from .ui import launch_ui
+
+    launch_ui(
+        config_path=args.config,
+        policy_path=args.policy,
+        host=args.host,
+        port=args.port,
+        human_seat=args.human_seat,
+    )
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="HULHE abstraction and training CLI")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -191,6 +203,14 @@ def build_parser() -> argparse.ArgumentParser:
     experiment_parser.add_argument("--tuned-only", action="store_true",
                                    help="Only evaluate the tuned policy (skip blueprint/ablation eval and head-to-head)")
     experiment_parser.set_defaults(func=command_run_experiments)
+
+    play_parser = subparsers.add_parser("play_ui")
+    play_parser.add_argument("--config")
+    play_parser.add_argument("--policy")
+    play_parser.add_argument("--host", default="127.0.0.1")
+    play_parser.add_argument("--port", type=int, default=8765)
+    play_parser.add_argument("--human-seat", type=int, default=0, choices=[0, 1])
+    play_parser.set_defaults(func=command_play_ui)
     return parser
 
 

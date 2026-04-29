@@ -15,10 +15,10 @@ dependencies = []
 [project.optional-dependencies]
 solver = ["LiteEFG", "open_spiel>=1.2"]
 eval = ["eval7"]
+native = ["pybind11>=2.11"]
 
 [project.scripts]
 hulhe-bot = "hulhe_bot.cli:main"
 
 [tool.setuptools]
 packages = ["hulhe_bot"]
-

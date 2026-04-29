@@ -42,7 +42,7 @@ class ResidualFineTuner:
                 if state.current_player == 0:
                     info_key = InfoSetKey(
                         street=observation.street.value,
-                        position=observation.acting_player,
+                        position=observation.relative_position,
                         history_id=observation.history_id,
                         bucket_id=observation.bucket_id,
                     ).encode()

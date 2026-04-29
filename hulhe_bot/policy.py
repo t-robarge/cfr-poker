@@ -38,17 +38,26 @@ class PolicyRuntime:
         self.config = config or AbstractHULHEConfig()
         self.bucketer = bucketer or Bucketer(self.config)
         self._nn_model = None          # lazy-loaded SimpleMLP cache
-        self._subgame_solver = None    # lazy-loaded RiverSubgameSolver
+        self._subgame_solver = None    # lazy-loaded PublicSubgameResolver
 
     def infoset_key(self, observation: Observation) -> InfoSetKey:
         return InfoSetKey(
             street=observation.street.value,
-            position=observation.acting_player,
+            position=observation.relative_position,
             history_id=observation.history_id,
             bucket_id=observation.bucket_id,
         )
 
     def distribution(self, observation: Observation) -> dict[Action, float]:
+        dist = self._base_distribution(observation)
+
+        # --- turn/river subgame refinement (opt-in) ---
+        if getattr(self.config, "use_subgame_solving", False):
+            dist = self._apply_subgame(observation, dist)
+
+        return dist
+
+    def _base_distribution(self, observation: Observation) -> dict[Action, float]:
         key = self.infoset_key(observation).encode()
         legal = list(observation.legal_actions)
         base_raw = self.artifact.policy_table.get(key, {})
@@ -77,10 +86,6 @@ class PolicyRuntime:
                 )
             else:
                 dist = base
-
-        # --- river subgame refinement (opt-in) ---
-        if getattr(self.config, "use_subgame_solving", False):
-            dist = self._apply_subgame(observation, dist)
 
         return dist
 
@@ -112,13 +117,19 @@ class PolicyRuntime:
     def _apply_subgame(
         self, observation: Observation, dist: dict[Action, float]
     ) -> dict[Action, float]:
-        from .subgame import RiverSubgameSolver
-        from .models import Street
-
-        if observation.street is not Street.RIVER:
-            return dist
+        mode = getattr(self.config, "subgame_mode", "heuristic")
         if self._subgame_solver is None:
-            self._subgame_solver = RiverSubgameSolver(self.config)
+            if mode == "cfr":
+                from .subgame_cfr import CFRSubgameSolver
+
+                self._subgame_solver = CFRSubgameSolver(
+                    self.config,
+                    base_policy_lookup=self._base_distribution,
+                )
+            else:
+                from .subgame import PublicSubgameResolver
+
+                self._subgame_solver = PublicSubgameResolver(self.config)
         return self._subgame_solver.refine(observation, dist)
 
     def act(self, observation: Observation, rng: random.Random | None = None) -> Action:
@@ -131,4 +142,3 @@ class PolicyRuntime:
             if threshold <= cumulative:
                 return action
         return next(iter(distribution))
-

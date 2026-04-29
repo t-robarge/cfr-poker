@@ -21,6 +21,7 @@ class Evaluator:
         details = self.bucketer.bucket_details(state.street, state.hole_cards[player], state.board)
         return Observation(
             acting_player=player,
+            button=state.button,
             street=state.street,
             hole_cards=state.hole_cards[player],
             board=state.board,

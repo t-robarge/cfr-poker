@@ -43,7 +43,7 @@ def extract_features(obs: Observation, config: AbstractHULHEConfig) -> np.ndarra
     # Street one-hot (4 dims)
     feats[STREET_INDEX.get(obs.street.value, 0)] = 1.0
     # Position (1 dim)
-    feats[4] = float(obs.acting_player)
+    feats[4] = float(obs.relative_position)
     # Bucket percentile / equity (1 dim, [0,1])
     feats[5] = obs.bucket_percentile
     # Pot normalised by starting stack (1 dim)

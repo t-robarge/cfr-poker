@@ -53,6 +53,7 @@ class BucketingResult:
 @dataclass(slots=True)
 class Observation:
     acting_player: int
+    button: int
     street: Street
     hole_cards: tuple[str, str]
     board: tuple[str, ...]
@@ -62,6 +63,10 @@ class Observation:
     pot: int
     bucket_id: int
     bucket_percentile: float
+
+    @property
+    def relative_position(self) -> int:
+        return 0 if self.acting_player == self.button else 1
 
 
 @dataclass(slots=True)
